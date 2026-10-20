@@ -1,0 +1,630 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatX - شات</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #eef2ff;
+      --panel: #ffffff;
+      --text: #20243a;
+      --muted: #697087;
+      --primary: #6558e8;
+      --border: #e1e5f0;
+      --mine: #e7e3ff;
+      --other: #f1f3f8;
+    }
+
+    body.dark {
+      --bg: #121522;
+      --panel: #1c2030;
+      --text: #f3f4ff;
+      --muted: #b3bad0;
+      --primary: #8b80ff;
+      --border: #353a50;
+      --mine: #38305f;
+      --other: #292e40;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      padding: 16px;
+    }
+
+    button, input { font: inherit; }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 14px;
+      background: var(--primary);
+      color: white;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .top {
+      max-width: 900px;
+      margin: 0 auto 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      font-size: 27px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .secondary {
+      background: var(--other);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .panel {
+      max-width: 900px;
+      margin: auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 8px 30px #0000000b;
+    }
+
+    .hidden { display: none !important; }
+    h2 { margin-top: 0; }
+
+    .muted {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .field {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      color: var(--text);
+      outline-color: var(--primary);
+    }
+
+    .auth-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    #status {
+      margin-top: 14px;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .room-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    #messages {
+      height: 48vh;
+      min-height: 260px;
+      overflow-y: auto;
+      padding: 14px 0;
+    }
+
+    .message {
+      max-width: 82%;
+      margin: 10px 0;
+      padding: 11px 13px;
+      border-radius: 14px;
+      background: var(--other);
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+
+    .message.mine {
+      background: var(--mine);
+      margin-right: auto;
+      margin-left: 0;
+    }
+
+    .sender {
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .time {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 7px;
+    }
+
+    .composer {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+
+    #messageInput {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+    }
+
+    #sendButton { white-space: nowrap; }
+
+    .emoji-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .emoji-button {
+      padding: 7px 10px;
+      background: var(--other);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 9px; }
+      .panel { padding: 14px; }
+      .message { max-width: 94%; }
+      #messages { height: 45vh; }
+      .composer { flex-wrap: wrap; }
+      #messageInput { flex-basis: 70%; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="top">
+    <div class="brand">ChatX 💬</div>
+
+    <div class="top-actions">
+      <button class="secondary" id="themeButton">
+        🌙 الوضع الليلي
+      </button>
+
+      <button class="secondary hidden" id="logoutButton">
+        تسجيل الخروج
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" id="authPanel">
+      <h2>أهلًا بيك في ChatX 👋</h2>
+
+      <p class="muted">
+        أنشئ حسابًا بالإيميل وكلمة السر أو سجّل دخولك.
+        لا تحتاج إلى رقم هاتف.
+      </p>
+
+      <form id="authForm">
+        <input
+          class="field"
+          id="emailInput"
+          type="email"
+          placeholder="البريد الإلكتروني"
+          autocomplete="email"
+          required
+        >
+
+        <input
+          class="field"
+          id="passwordInput"
+          type="password"
+          placeholder="كلمة السر (6 أحرف على الأقل)"
+          autocomplete="current-password"
+          minlength="6"
+          required
+        >
+
+        <div class="auth-buttons">
+          <button type="button" id="signupButton">
+            إنشاء حساب
+          </button>
+
+          <button type="submit">
+            تسجيل الدخول
+          </button>
+        </div>
+      </form>
+
+      <p class="muted">
+        استخدم بريدك أنت، ولا تشارك كلمة السر مع أي شخص.
+      </p>
+
+      <div id="status" role="status">
+        جاهز لتسجيل الدخول.
+      </div>
+    </section>
+
+    <section class="panel hidden" id="chatPanel">
+      <div class="room-title">
+        <div>
+          <h2 style="margin-bottom:5px">
+            الغرفة العامة 🌍
+          </h2>
+
+          <div class="muted" id="userLabel"></div>
+        </div>
+
+        <span class="muted">رسائل مباشرة</span>
+      </div>
+
+      <p class="muted">
+        كل شخص مسجّل في هذا المشروع يستطيع قراءة رسائل الغرفة.
+        لا تكتب بياناتك الشخصية أو كلمات السر هنا.
+      </p>
+
+      <div id="messages" aria-live="polite">
+        <p class="muted">جاري تحميل الرسائل...</p>
+      </div>
+
+      <form id="messageForm">
+        <div class="composer">
+          <input
+            class="field"
+            id="messageInput"
+            type="text"
+            maxlength="2000"
+            placeholder="اكتب رسالتك هنا..."
+            autocomplete="off"
+            required
+          >
+
+          <button id="sendButton" type="submit">
+            إرسال ➤
+          </button>
+        </div>
+      </form>
+
+      <div class="emoji-row">
+        <button type="button" class="emoji-button">😀</button>
+        <button type="button" class="emoji-button">😂</button>
+        <button type="button" class="emoji-button">❤️</button>
+        <button type="button" class="emoji-button">👍</button>
+        <button type="button" class="emoji-button">🔥</button>
+        <button type="button" class="emoji-button">🎉</button>
+      </div>
+
+      <div id="chatStatus" class="muted" role="status"></div>
+    </section>
+  </main>
+
+  <!-- مكتبات Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <script>
+    // إعدادات Firebase الخاصة بمشروع ChatX
+    const firebaseConfig = {
+    apiKey: "AIzaSyCKejo73pumbhozBNKNjP0ibSIY6S4toIw",
+      authDomain: "chatx-b4ccf.firebaseapp.com",
+      projectId: "chatx-b4ccf",
+      storageBucket: "chatx-b4ccf.firebasestorage.app",
+      messagingSenderId: "1072952297861",
+      appId: "1:1072952297861:web:100ac1490184a3c0ca5cec"
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    const authPanel = $("authPanel");
+    const chatPanel = $("chatPanel");
+    const statusBox = $("status");
+    const chatStatus = $("chatStatus");
+    const messagesBox = $("messages");
+    const messageInput = $("messageInput");
+    const sendButton = $("sendButton");
+
+    let auth = null;
+    let db = null;
+    let unsubscribeMessages = null;
+    let currentUser = null;
+
+    function setStatus(message) {
+      statusBox.textContent = message;
+    }
+
+    function explainError(error) {
+      const code = error && error.code ? error.code : "";
+
+      const messages = {
+        "auth/email-already-in-use":
+          "الإيميل ده مستخدم قبل كده. جرّب تسجيل الدخول.",
+
+        "auth/invalid-email":
+          "اكتب إيميل صحيح.",
+
+        "auth/weak-password":
+          "كلمة السر ضعيفة. استخدم 6 أحرف على الأقل.",
+
+        "auth/invalid-credential":
+          "الإيميل أو كلمة السر غير صحيحة.",
+
+        "auth/user-not-found":
+          "الحساب مش موجود. أنشئ حسابًا أولًا.",
+
+        "auth/wrong-password":
+          "كلمة السر غير صحيحة.",
+
+        "auth/operation-not-allowed":
+          "فعّل Email/Password من إعدادات Authentication في Firebase.",
+
+        "auth/unauthorized-domain":
+          "النطاق غير مسموح به في Firebase. افتح Authorized domains. فتح الملف مباشرة قد لا يعمل؛ جرّبه من localhost أو موقع مستضاف.",
+
+        "permission-denied":
+          "Firebase رفض العملية. راجع قواعد Firestore.",
+
+        "unavailable":
+          "الاتصال بقاعدة البيانات غير متاح حاليًا. جرّب مرة أخرى."
+      };
+
+      return messages[code] ||
+        ("حصل خطأ: " +
+        (error.message || code || "خطأ غير معروف"));
+    }
+
+    function checkConfig() {
+      return firebaseConfig.apiKey &&
+        firebaseConfig.projectId &&
+        firebaseConfig.appId;
+    }
+
+    if (!checkConfig()) {
+      setStatus("إعدادات Firebase ناقصة. راجع firebaseConfig في الكود.");
+    } else {
+      try {
+        firebase.initializeApp(firebaseConfig);
+
+        auth = firebase.auth();
+        db = firebase.firestore();
+
+        // إنشاء حساب جديد
+        $("signupButton").addEventListener("click", async () => {
+          const email = $("emailInput").value.trim();
+          const password = $("passwordInput").value;
+
+          if (!email || password.length < 6) {
+            setStatus(
+              "اكتب إيميل صحيح وكلمة سر من 6 أحرف على الأقل."
+            );
+            return;
+          }
+
+          try {
+            setStatus("جاري إنشاء الحساب...");
+
+            await auth.createUserWithEmailAndPassword(
+              email,
+              password
+            );
+
+            setStatus("تم إنشاء الحساب.");
+          } catch (error) {
+            setStatus(explainError(error));
+          }
+        });
+
+        // تسجيل الدخول
+        $("authForm").addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const email = $("emailInput").value.trim();
+          const password = $("passwordInput").value;
+
+          try {
+            setStatus("جاري تسجيل الدخول...");
+
+            await auth.signInWithEmailAndPassword(
+              email,
+              password
+            );
+          } catch (error) {
+            setStatus(explainError(error));
+          }
+        });
+
+        // تسجيل الخروج
+        $("logoutButton").addEventListener("click", async () => {
+          try {
+            await auth.signOut();
+          } catch (error) {
+            chatStatus.textContent = explainError(error);
+          }
+        });
+
+        // متابعة حالة تسجيل الدخول
+        auth.onAuthStateChanged((user) => {
+          currentUser = user;
+
+          if (unsubscribeMessages) {
+            unsubscribeMessages();
+            unsubscribeMessages = null;
+          }
+
+          if (!user) {
+            authPanel.classList.remove("hidden");
+            chatPanel.classList.add("hidden");
+            $("logoutButton").classList.add("hidden");
+            messagesBox.replaceChildren();
+
+            setStatus("سجّل الدخول أو أنشئ حسابًا جديدًا.");
+            return;
+          }
+
+          authPanel.classList.add("hidden");
+          chatPanel.classList.remove("hidden");
+          $("logoutButton").classList.remove("hidden");
+
+          $("userLabel").textContent = "تم تسجيل الدخول بنجاح";
+          chatStatus.textContent = "متصل. جاري تحميل الرسائل...";
+
+          loadMessages();
+        });
+
+      } catch (error) {
+        setStatus("تعذر تشغيل Firebase: " + error.message);
+      }
+    }
+
+    // تحميل الرسائل مباشرة من Firestore
+    function loadMessages() {
+      messagesBox.replaceChildren();
+
+      unsubscribeMessages = db.collection("messages")
+        .orderBy("createdAt", "asc")
+        .limit(100)
+        .onSnapshot((snapshot) => {
+          messagesBox.replaceChildren();
+
+          if (snapshot.empty) {
+            const empty = document.createElement("p");
+            empty.className = "muted";
+            empty.textContent =
+              "مفيش رسائل لسه. ابدأ أول رسالة! 👋";
+
+            messagesBox.appendChild(empty);
+          }
+
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+
+            const message = document.createElement("div");
+
+            message.className = "message" +
+              (
+                currentUser && data.uid === currentUser.uid
+                  ? " mine"
+                  : ""
+              );
+
+            const sender = document.createElement("div");
+            sender.className = "sender";
+
+            sender.textContent =
+              currentUser && data.uid === currentUser.uid
+                ? "أنت"
+                : "مستخدم";
+
+            const content = document.createElement("div");
+            content.textContent = data.text || "";
+
+            message.appendChild(sender);
+            message.appendChild(content);
+
+            if (data.createdAt && data.createdAt.toDate) {
+              const time = document.createElement("div");
+              time.className = "time";
+
+              time.textContent =
+                data.createdAt.toDate().toLocaleString("ar-EG");
+
+              message.appendChild(time);
+            }
+
+            messagesBox.appendChild(message);
+          });
+
+          messagesBox.scrollTop = messagesBox.scrollHeight;
+          chatStatus.textContent = "الشات متصل.";
+
+        }, (error) => {
+          chatStatus.textContent = explainError(error);
+        });
+    }
+
+    // إرسال رسالة جديدة
+    $("messageForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!currentUser || !db) {
+        chatStatus.textContent = "سجّل الدخول الأول.";
+        return;
+      }
+
+      const text = messageInput.value.trim();
+      if (!text) return;
+
+      sendButton.disabled = true;
+
+      try {
+        await db.collection("messages").add({
+          uid: currentUser.uid,
+          text: text,
+          createdAt:
+            firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        messageInput.value = "";
+        messageInput.focus();
+        chatStatus.textContent = "";
+
+      } catch (error) {
+        chatStatus.textContent = explainError(error);
+
+      } finally {
+        sendButton.disabled = false;
+      }
+    });
+
+    // إضافة الإيموجي إلى الرسالة
+    document.querySelectorAll(".emoji-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        messageInput.value += button.textContent;
+        messageInput.focus();
+      });
+    });
+
+    // الوضع الليلي والنهاري
+    $("themeButton").addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+
+      $("themeButton").textContent =
+        document.body.classList.contains("dark")
+          ? "☀️ الوضع النهاري"
+          : "🌙 الوضع الليلي";
+    });
+  </script>
+</body>
+</html>
