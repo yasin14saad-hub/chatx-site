@@ -430,42 +430,82 @@
         db = firebase.firestore();
 
      
+       
         // إنشاء حساب جديد
         $("signupButton").addEventListener("click", async () => {
           const displayName = $("displayNameInput").value.trim();
+          const username = $("usernameInput").value.trim().toLowerCase();
           const email = $("emailInput").value.trim();
           const password = $("passwordInput").value;
 
           if (!displayName) {
-            setStatus("اكتب اسمك في ChatX الأول.");
+            setStatus("اكتب اسمك الظاهر في ChatX الأول.");
+            return;
+          }
+
+          if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+            setStatus("اسم المستخدم لازم يكون من 3 إلى 20 حرفًا إنجليزيًا أو رقمًا أو _.");
             return;
           }
 
           if (!email || password.length < 6) {
-            setStatus(
-              "اكتب إيميل صحيح وكلمة سر من 6 أحرف على الأقل."
-            );
+            setStatus("اكتب إيميل صحيح وكلمة سر من 6 أحرف على الأقل.");
             return;
           }
 
+          let credential = null;
+
           try {
+            setStatus("بنتأكد إن اسم المستخدم متاح...");
+
+            const usernameRef = db.collection("usernames").doc(username);
+            const usernameCheck = await usernameRef.get();
+
+            if (usernameCheck.exists) {
+              setStatus("اسم المستخدم ده مستخدم بالفعل. اختار اسمًا تانيًا.");
+              return;
+            }
+
             setStatus("جاري إنشاء الحساب...");
 
-            const credential =
-              await auth.createUserWithEmailAndPassword(
-                email,
-                password
-              );
+            credential = await auth.createUserWithEmailAndPassword(email, password);
 
             await credential.user.updateProfile({
               displayName: displayName
             });
 
-            setStatus("تم إنشاء الحساب وحفظ الاسم.");
+            const userRef = db.collection("users").doc(credential.user.uid);
+
+            await db.runTransaction(async (transaction) => {
+              const usernameDoc = await transaction.get(usernameRef);
+
+              if (usernameDoc.exists) {
+                throw new Error("USERNAME_TAKEN");
+              }
+
+              transaction.set(usernameRef, {
+                uid: credential.user.uid,
+                username: username
+              });
+
+              transaction.set(userRef, {
+                uid: credential.user.uid,
+                username: username,
+                displayName: displayName,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            });
+
+            setStatus("تم إنشاء الحساب وحفظ اسم المستخدم بنجاح!");
           } catch (error) {
-            setStatus(explainError(error));
+            if (error.message === "USERNAME_TAKEN") {
+              setStatus("اسم المستخدم اتاخد للتو. جرّب اسمًا تانيًا.");
+            } else {
+              setStatus(explainError(error));
+            }
           }
         });
+
 
         // تسجيل الدخول
         $("authForm").addEventListener("submit", async (event) => {
