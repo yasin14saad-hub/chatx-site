@@ -562,6 +562,72 @@
           }
         });
 
+        
+        // البحث عن صديق باسم المستخدم
+        $("searchFriendButton").addEventListener("click", async () => {
+          const username = $("friendUsernameInput").value
+            .trim()
+            .toLowerCase();
+
+          const result = $("friendSearchStatus");
+
+          if (!currentUser) {
+            result.textContent = "سجّل الدخول الأول.";
+            return;
+          }
+
+          if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+            result.textContent =
+              "اكتب اسم مستخدم من 3 إلى 20 حرفًا إنجليزيًا أو رقمًا أو _.";
+            return;
+          }
+
+         
+          }
+
+          try {
+            result.textContent = "بندور على المستخدم...";
+
+            const usernameDoc = await db
+              .collection("usernames")
+              .doc(username)
+              .get();
+
+            if (!usernameDoc.exists) {
+              result.textContent = "ملقيناش اسم المستخدم ده.";
+              return;
+            }
+
+            const userId = usernameDoc.data().uid;
+
+            if (userId === currentUser.uid) {
+              result.textContent = "ده اسم المستخدم الخاص بحسابك.";
+              return;
+            }
+
+            const profileDoc = await db
+              .collection("users")
+              .doc(userId)
+              .get();
+
+            if (!profileDoc.exists) {
+              result.textContent = "ملقيناش ملف المستخدم.";
+              return;
+            }
+
+            const profile = profileDoc.data();
+
+            result.textContent =
+              "لقينا المستخدم: " + profile.displayName +
+              " (@" + profile.username + ").";
+          } catch (error) {
+            console.error(error);
+            result.textContent =
+              "حصل خطأ أثناء البحث. تأكد من اتصالك بالإنترنت وقواعد Firebase.";
+          }
+        });
+
+
         // متابعة حالة تسجيل الدخول
         auth.onAuthStateChanged((user) => {
           currentUser = user;
