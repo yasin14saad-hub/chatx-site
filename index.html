@@ -317,6 +317,22 @@
 
       <div id="messages" aria-live="polite">
         <p class="muted">جاري تحميل الرسائل...</p>
+        
+      <div class="friend-search">
+        <h3>إضافة أصحابك 👥</h3>
+        <input
+          class="field"
+          id="friendUsernameInput"
+          type="text"
+          placeholder="اكتب اسم المستخدم لصاحبك"
+          maxlength="20"
+        >
+        <button type="button" id="searchFriendButton">
+          البحث عن صديق
+        </button>
+        <div id="friendSearchStatus" role="status"></div>
+      </div>
+
       </div>
 
       <form id="messageForm">
