@@ -420,10 +420,17 @@
         auth = firebase.auth();
         db = firebase.firestore();
 
+     
         // إنشاء حساب جديد
         $("signupButton").addEventListener("click", async () => {
+          const displayName = $("displayNameInput").value.trim();
           const email = $("emailInput").value.trim();
           const password = $("passwordInput").value;
+
+          if (!displayName) {
+            setStatus("اكتب اسمك في ChatX الأول.");
+            return;
+          }
 
           if (!email || password.length < 6) {
             setStatus(
@@ -435,12 +442,17 @@
           try {
             setStatus("جاري إنشاء الحساب...");
 
-            await auth.createUserWithEmailAndPassword(
-              email,
-              password
-            );
+            const credential =
+              await auth.createUserWithEmailAndPassword(
+                email,
+                password
+              );
 
-            setStatus("تم إنشاء الحساب.");
+            await credential.user.updateProfile({
+              displayName: displayName
+            });
+
+            setStatus("تم إنشاء الحساب وحفظ الاسم.");
           } catch (error) {
             setStatus(explainError(error));
           }
@@ -497,7 +509,8 @@
           chatPanel.classList.remove("hidden");
           $("logoutButton").classList.remove("hidden");
 
-          $("userLabel").textContent = "تم تسجيل الدخول بنجاح";
+          $("userLabel").textContent =
+  "أهلًا " + (user.displayName || "مستخدم ChatX");
           chatStatus.textContent = "متصل. جاري تحميل الرسائل...";
 
           loadMessages();
