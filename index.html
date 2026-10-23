@@ -410,11 +410,21 @@
       if(photo){if(!photo.type.startsWith('image/'))throw new Error('صورة الملف الشخصي لازم تكون صورة.');photoPath=await uploadMedia(photo,'profileMedia/'+state.user.uid);status('photoStatus','تم رفع الصورة.');}
       if(bg){if(!bg.type.startsWith('image/'))throw new Error('الخلفية لازم تكون صورة.');backgroundPath=await uploadMedia(bg,'profileMedia/'+state.user.uid);status('backgroundStatus','تم رفع الخلفية.');}
       await state.db.collection('users').doc(state.user.uid).update({displayName,photoPath,backgroundPath});await state.user.updateProfile({displayName});state.profile={...state.profile,displayName,photoPath,backgroundPath};applyProfile();$('profilePhotoInput').value='';$('backgroundInput').value='';status('profileStatus','تم حفظ الملف الشخصي.');
-        } catch (e) {
+    } catch (e) {
       console.error("ChatX saveProfile error:", e);
+
+      const authUser = firebase.auth().currentUser;
+      const authUid = authUser ? authUser.uid : "";
+      const appUid = state.user ? state.user.uid : "";
+      const sameUser = authUid !== "" && authUid === appUid;
+      const projectId = firebase.app().options.projectId || "غير معروف";
+
       status(
         'profileStatus',
-        "الخطأ: " + (e.code || "بدون رمز") + " — " + (e.message || String(e))
+        "الخطأ: " + (e.code || "بدون رمز") +
+        " — " + (e.message || String(e)) +
+        " | تطابق الحساب: " + (sameUser ? "نعم" : "لا") +
+        " | المشروع: " + projectId
       );
     }
   }
