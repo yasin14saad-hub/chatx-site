@@ -409,7 +409,8 @@
       const photo=$('profilePhotoInput').files[0];const bg=$('backgroundInput').files[0];
       if(photo){if(!photo.type.startsWith('image/'))throw new Error('صورة الملف الشخصي لازم تكون صورة.');photoPath=await uploadMedia(photo,'profileMedia/'+state.user.uid);status('photoStatus','تم رفع الصورة.');}
       if(bg){if(!bg.type.startsWith('image/'))throw new Error('الخلفية لازم تكون صورة.');backgroundPath=await uploadMedia(bg,'profileMedia/'+state.user.uid);status('backgroundStatus','تم رفع الخلفية.');}
-      await state.db.collection('users').doc(state.user.uid).update({displayName,photoPath,backgroundPath});await state.user.updateProfile({displayName});state.profile={...state.profile,displayName,photoPath,backgroundPath};applyProfile();$('profilePhotoInput').value='';$('backgroundInput').value='';status('profileStatus','تم حفظ الملف الشخصي.');
+        await state.user.getIdToken(true);
+        await state.db.collection('users').doc(state.user.uid).update({displayName,photoPath,backgroundPath});await state.user.updateProfile({displayName});state.profile={...state.profile,displayName,photoPath,backgroundPath};applyProfile();$('profilePhotoInput').value='';$('backgroundInput').value='';status('profileStatus','تم حفظ الملف الشخصي.');
     } catch (e) {
       console.error("ChatX saveProfile error:", e);
 
