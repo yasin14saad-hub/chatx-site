@@ -403,29 +403,91 @@
     try{status('statusPostMessage','جاري نشر الحالة...');let mediaPath='';if(file){if(!file.type.startsWith('image/'))throw new Error('اختر صورة فقط للحالة.');mediaPath=await uploadMedia(file,'publicMedia/'+state.user.uid);}await state.db.collection('statuses').doc(state.user.uid).set({uid:state.user.uid,username:state.profile.username||'',displayName:state.profile.displayName||'مستخدم',text,mediaPath,createdAt:firebase.firestore.FieldValue.serverTimestamp(),expiresAt:firebase.firestore.Timestamp.fromDate(new Date(Date.now()+24*60*60*1000))});$('statusTextInput').value='';$('statusFile').value='';status('statusPostMessage','تم نشر الحالة.');loadStatuses();}
     catch(e){status('statusPostMessage',e.message&&!e.code?e.message:errMessage(e));}
   }
-  async function saveProfile(event) {
-    event.preventDefault();const displayName=$('profileNameInput').value.trim();if(!displayName||displayName.length>30){status('profileStatus','اكتب اسمًا من 1 إلى 30 حرفًا.');return;}
-    try{status('profileStatus','جاري حفظ الملف الشخصي...');let photoPath=state.profile.photoPath||'',backgroundPath=state.profile.backgroundPath||'';
-      const photo=$('profilePhotoInput').files[0];const bg=$('backgroundInput').files[0];
-      if(photo){if(!photo.type.startsWith('image/'))throw new Error('صورة الملف الشخصي لازم تكون صورة.');photoPath=await uploadMedia(photo,'profileMedia/'+state.user.uid);status('photoStatus','تم رفع الصورة.');}
-      if(bg){if(!bg.type.startsWith('image/'))throw new Error('الخلفية لازم تكون صورة.');backgroundPath=await uploadMedia(bg,'profileMedia/'+state.user.uid);status('backgroundStatus','تم رفع الخلفية.');}
-        await state.user.getIdToken(true);
-        await state.db.collection('users').doc(state.user.uid).update({displayName,photoPath,backgroundPath});await state.user.updateProfile({displayName});state.profile={...state.profile,displayName,photoPath,backgroundPath};applyProfile();$('profilePhotoInput').value='';$('backgroundInput').value='';status('profileStatus','تم حفظ الملف الشخصي.');
-    } catch (e) {
-      console.error("ChatX saveProfile error:", e);
+   async function saveProfile(event) {
+    event.preventDefault();
 
-      const authUser = firebase.auth().currentUser;
-      const authUid = authUser ? authUser.uid : "";
-      const appUid = state.user ? state.user.uid : "";
-      const sameUser = authUid !== "" && authUid === appUid;
-      const projectId = firebase.app().options.projectId || "غير معروف";
+    const displayName = $('profileNameInput').value.trim();
+
+    if (!displayName || displayName.length > 30) {
+      status('profileStatus', 'اكتب اسمًا من 1 إلى 30 حرفًا.');
+      return;
+    }
+
+    let stage = 'بدء الحفظ';
+
+    try {
+      status('profileStatus', 'جاري حفظ الملف الشخصي...');
+
+      let photoPath = state.profile.photoPath || '';
+      let backgroundPath = state.profile.backgroundPath || '';
+
+      const photo = $('profilePhotoInput').files[0];
+      const bg = $('backgroundInput').files[0];
+
+      if (photo) {
+        stage = 'رفع صورة الملف الشخصي';
+
+        if (!photo.type.startsWith('image/')) {
+          throw new Error('صورة الملف الشخصي لازم تكون صورة.');
+        }
+
+        photoPath = await uploadMedia(
+          photo,
+          'profileMedia/' + state.user.uid
+        );
+
+        status('photoStatus', 'تم رفع الصورة.');
+      }
+
+      if (bg) {
+        stage = 'رفع الخلفية';
+
+        if (!bg.type.startsWith('image/')) {
+          throw new Error('الخلفية لازم تكون صورة.');
+        }
+
+        backgroundPath = await uploadMedia(
+          bg,
+          'profileMedia/' + state.user.uid
+        );
+
+        status('backgroundStatus', 'تم رفع الخلفية.');
+      }
+
+      stage = 'حفظ بيانات الملف الشخصي في Firestore';
+
+      await state.db.collection('users').doc(state.user.uid).update({
+        displayName,
+        photoPath,
+        backgroundPath
+      });
+
+      stage = 'تحديث الاسم في Firebase Authentication';
+
+      await state.user.updateProfile({ displayName });
+
+      state.profile = {
+        ...state.profile,
+        displayName,
+        photoPath,
+        backgroundPath
+      };
+
+      applyProfile();
+
+      $('profilePhotoInput').value = '';
+      $('backgroundInput').value = '';
+
+      status('profileStatus', 'تم حفظ الملف الشخصي بنجاح.');
+
+    } catch (e) {
+      console.error('ChatX saveProfile error:', stage, e);
 
       status(
         'profileStatus',
-        "الخطأ: " + (e.code || "بدون رمز") +
-        " — " + (e.message || String(e)) +
-        " | تطابق الحساب: " + (sameUser ? "نعم" : "لا") +
-        " | المشروع: " + projectId
+        'المرحلة: ' + stage +
+        ' | الخطأ: ' + (e.code || 'بدون رمز') +
+        ' — ' + (e.message || String(e))
       );
     }
   }
