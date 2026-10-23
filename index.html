@@ -454,9 +454,29 @@
         status('backgroundStatus', 'تم رفع الخلفية.');
       }
 
-      stage = 'حفظ بيانات الملف الشخصي في Firestore';
+           stage = 'التحقق من مستند المستخدم';
 
-      await state.db.collection('users').doc(state.user.uid).update({
+      const profileRef = state.db
+        .collection('users')
+        .doc(state.user.uid);
+
+      const profileSnap = await profileRef.get();
+
+      if (!profileSnap.exists) {
+        throw new Error(
+          'مستند الملف الشخصي غير موجود للحساب الحالي.'
+        );
+      }
+
+      if (profileSnap.data().uid !== state.user.uid) {
+        throw new Error(
+          'معرّف الحساب لا يطابق بيانات الملف الشخصي.'
+        );
+      }
+
+      stage = 'تحديث مستند users';
+
+      await profileRef.update({
         displayName,
         photoPath,
         backgroundPath
