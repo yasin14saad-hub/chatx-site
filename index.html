@@ -462,9 +462,9 @@
 
       const profileSnap = await profileRef.get();
 
-      if (!profileSnap.exists) {
+           if (!profileSnap.exists) {
         throw new Error(
-          ''المستند غير موجود. UID المستخدم الحالي: ' + state.user.uid'
+          'المستند غير موجود. UID المستخدم الحالي: ' + state.user.uid
         );
       }
 
