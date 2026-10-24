@@ -464,7 +464,7 @@
 
       if (!profileSnap.exists) {
         throw new Error(
-          'مستند الملف الشخصي غير موجود للحساب الحالي.'
+          ''المستند غير موجود. UID المستخدم الحالي: ' + state.user.uid'
         );
       }
 
